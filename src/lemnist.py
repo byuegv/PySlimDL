@@ -249,7 +249,7 @@ def main(args,*k,**kw):
                 correct += (predicted == labels).sum().item()
         _header="[ {} Epoch {} /Iteration {} Wallclock {}]".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),epoch+1,iteration,
         wallclock)
-        print('{} Accuracy of the network on the 10000 test images: {} %%'.format(_header,100 * correct / total))
+        print('{} Accuracy of the network on the 10000 test images: {} %'.format(_header,100 * correct / total))
         logger.write('{},{},{},{}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch+1 ,iteration,
         wallclock, 100 * correct / total))
 
