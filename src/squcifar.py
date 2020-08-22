@@ -6,8 +6,8 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from dataloader.loader import MNIST,CriticalMNIST
-from models.lenet import LeNet5
+from dataloader.loader import CIFAR10,CriticalCIFAR10
+from models.squeezenet import SqueezeNet
 from redishelper.redishelper import RedisHelper
 
 import sys
@@ -23,7 +23,7 @@ parser.add_argument("--classes",default=10,type=int,help="The number of classifi
 parser.add_argument("--labels",default="0-9",help="The select labels")
 
 # model related
-parser.add_argument("--model",default="lenet5",help="The name of neural networks",choices=["lenet5","alexnet"])
+parser.add_argument("--model",default="squeezenet",help="The name of neural networks",choices=["squeezenet","alexnet"])
 
 # optimizer related
 parser.add_argument("-b","--batchsize",default=64,type=int,help="Batch size of a training batch at each iteration")
@@ -65,32 +65,32 @@ def main(args,*k,**kw):
     
     # log_file and summary path
 
-    log_file = "{}-lenet-edge-{}.log".format(time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time())),redis_helper.ID)
-    log_dir = "tbruns/lenet-mnist-edge-{}".format(redis_helper.ID)
+    log_file = "{}-squeezenet-edge-{}.log".format(time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time())),redis_helper.ID)
+    log_dir = "tbruns/squeezenet-cifar10-edge-{}".format(redis_helper.ID)
 
     logger = open(log_file,'w')
     swriter = SummaryWriter(log_dir)
 
     # load traing data
-    trainset = MNIST(root=args.dataset, train=True, download=False, transform=None)
+    trainset = CIFAR10(root=args.dataset, train=True, download=False, transform=None)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batchsize, shuffle=True, num_workers=0)
 
-    testset = MNIST(root=args.dataset, train=False, download=False, transform=None)
+    testset = CIFAR10(root=args.dataset, train=False, download=False, transform=None)
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batchsize, shuffle=False, num_workers=0)
 
     # construct neural network
-    lenet = LeNet5()
-    lenet.to(device)
+    net = SqueezeNet()
+    net.to(device)
 
     # define optimizer
     criterion = nn.CrossEntropyLoss()
     criterion_loss = nn.CrossEntropyLoss(reduction='none')
-    optimizer = optim.SGD(lenet.parameters(), lr=args.lr, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
 
-    SIZE = (1,28,28)
+    SIZE = (3,32,32)
     # start training
+    iteration = 0 # global iterations
     for epoch in range(0,args.epoch,1):
-        iteration = 0
         # merge parameters of other edge
         if epoch > 0:
             mintime,maxtime,param_list = redis_helper.min2max_time_params()
@@ -99,7 +99,7 @@ def main(args,*k,**kw):
                 w1 = model_score / (model_score + item[0])
                 w2 = item[0] / (model_score + item[0])
                 
-                for local,other in zip(lenet.parameters(),item[1]):
+                for local,other in zip(net.parameters(),item[1]):
                     ldev = local.get_device()
                     rdev = other.get_device()
                     if ldev < 0:
@@ -121,14 +121,14 @@ def main(args,*k,**kw):
         # labels: n x zip
         if args.noncriticalremove == False:
             ndata = train_data[:,1:,:]
-            ndata = ndata.reshape(-1,1,28,28)
+            ndata = ndata.reshape(-1,3,32,32)
             nlabels = train_labels[:,1:]
             nlabels = nlabels.reshape(-1,1)
 
-            critrainset = CriticalMNIST(datax=ndata,targetsx=nlabels)
+            critrainset = CriticalCIFAR10(datax=ndata,targetsx=nlabels)
         else:
             cri_data = train_data[:,0,:] # n x feature
-            cri_data = cri_data.reshape(-1,1,28,28)
+            cri_data = cri_data.reshape(-1,3,32,32)
             cri_label = train_labels[:,0] # n
             cri_lable = cri_label.reshape(-1,1)
 
@@ -145,7 +145,7 @@ def main(args,*k,**kw):
                     images = images.to(device)
                     labels = labels.to(device)
 
-                    outputs = lenet(images)
+                    outputs = net(images)
                     loss = criterion_loss(outputs, labels)
 
                     for ix in range(len(loss)):
@@ -163,7 +163,7 @@ def main(args,*k,**kw):
                     #images = images.to(device)
                     #labels = labels.to(device)
 
-                    #outputs = lenet(images)
+                    #outputs = net(images)
                     #loss = criterion(outputs, labels)
 
                    # loss_info.append((idx,loss.item()))
@@ -181,11 +181,11 @@ def main(args,*k,**kw):
             #cri_label = cri_label[sel_index]
 
             ndata = train_data[sel_index][:,1:,:]
-            ndata = ndata.reshape(-1,1,28,28)
+            ndata = ndata.reshape(-1,3,32,32)
             nlabels = train_labels[sel_index][:,1:]
             nlabels = nlabels.reshape(-1,1)
 
-            critrainset = CriticalMNIST(datax=ndata,targetsx=nlabels)
+            critrainset = CriticalCIFAR10(datax=ndata,targetsx=nlabels)
 
         # The data loader of critical samples
         critrainloader = torch.utils.data.DataLoader(critrainset, batch_size=args.batchsize, shuffle=True, num_workers=0)
@@ -206,7 +206,7 @@ def main(args,*k,**kw):
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = lenet(inputs)
+            outputs = net(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -227,7 +227,7 @@ def main(args,*k,**kw):
         # push time and parameters to Redis
         model_score = model_score / 2
         sel_edge_id = redis_helper.random_edge_id(can_be_self=True)
-        redis_helper.ins_time_params(sel_edge_id,training_cost,model_score,list(lenet.parameters()))
+        redis_helper.ins_time_params(sel_edge_id,training_cost,model_score,list(net.parameters()))
         while redis_helper.finish_push() == False:
             time.sleep(1.0)
         
@@ -237,10 +237,10 @@ def main(args,*k,**kw):
         with torch.no_grad():
             for data in testloader:
                 images, labels = data
-                images = images.reshape(-1,1,28,28).to(device)
+                images = images.reshape(-1,3,32,32).to(device)
                 labels = labels.squeeze().to(device)
 
-                outputs = lenet(images)
+                outputs = net(images)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
@@ -255,7 +255,7 @@ def main(args,*k,**kw):
     redis_helper.register_out()
     logger.close() # close log file writer
 
-    return lenet
+    return net
 
 if __name__ == '__main__':
     args = parser.parse_args()
