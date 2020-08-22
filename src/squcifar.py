@@ -89,8 +89,10 @@ def main(args,*k,**kw):
 
     SIZE = (3,32,32)
     # start training
+    wallclock = 0.0
     iteration = 0 # global iterations
     for epoch in range(0,args.epoch,1):
+        starteg = time.time()
         # merge parameters of other edge
         if epoch > 0:
             mintime,maxtime,param_list = redis_helper.min2max_time_params()
@@ -231,6 +233,7 @@ def main(args,*k,**kw):
         while redis_helper.finish_push() == False:
             time.sleep(1.0)
         
+        wallclock += time.time() - starteg
         # test on test data
         correct = 0
         total = 0
@@ -244,9 +247,11 @@ def main(args,*k,**kw):
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
-        _header="[ {} Epoch {} /Iteration {} ]".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),epoch+1,iteration)
+        _header="[ {} Epoch {} /Iteration {} Wallclock {}]".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),epoch+1,iteration,
+        wallclock)
         print('{} Accuracy of the network on the 10000 test images: {} %%'.format(_header,100 * correct / total))
-        logger.write('{} Accuracy {} %%\n'.format(_header,100 * correct / total))
+        logger.write('{},{},{},{}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch+1 ,iteration,
+        wallclock, 100 * correct / total))
 
         swriter.add_scalar("accuracy", 100 * correct / total, epoch)
 
