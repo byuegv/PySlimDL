@@ -6,7 +6,7 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from dataloader.loader import CIFAR10,CriticalCIFAR10
+from dataloader.cifarloader import CIFAR10,CriticalCIFAR10
 from models.squeezenet import SqueezeNet
 from redishelper.redishelper import RedisHelper
 
