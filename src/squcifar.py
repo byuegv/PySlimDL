@@ -147,7 +147,7 @@ def main(args,*k,**kw):
                     images = images.to(device)
                     labels = labels.to(device)
 
-                    outputs = net(images)
+                    outputs = net(images).squeeze()
                     loss = criterion_loss(outputs, labels)
 
                     for ix in range(len(loss)):
@@ -208,7 +208,7 @@ def main(args,*k,**kw):
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = net(inputs)
+            outputs = net(inputs).squeeze()
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
