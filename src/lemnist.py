@@ -132,7 +132,7 @@ def main(args,*k,**kw):
             cri_data = train_data[:,0,:] # n x feature
             cri_data = cri_data.reshape(-1,1,28,28)
             cri_label = train_labels[:,0] # n
-            cri_lable = cri_label.reshape(-1,1)
+            cri_label = cri_label.reshape(-1,1)
 
             # calculate the loss of each aggregated points
             loss_info = []
