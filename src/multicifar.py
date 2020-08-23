@@ -7,8 +7,8 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
 from dataloader.cifarloader import CIFAR10,CriticalCIFAR10
-from models.squeezenet import SqueezeNet
 from redishelper.redishelper import RedisHelper
+import models
 
 import sys
 import time
@@ -23,7 +23,8 @@ parser.add_argument("--classes",default=10,type=int,help="The number of classifi
 parser.add_argument("--labels",default="0-9",help="The select labels")
 
 # model related
-parser.add_argument("--model",default="squeezenet",help="The name of neural networks",choices=["squeezenet","alexnet"])
+parser.add_argument("--model",default="resnet18",help="The name of neural networks",choices=["resnet18",
+"mobilenetv2","resnet34","resnet50","resnet101","resnet152"])
 
 # optimizer related
 parser.add_argument("-b","--batchsize",default=64,type=int,help="Batch size of a training batch at each iteration")
@@ -65,7 +66,8 @@ def main(args,*k,**kw):
 
     # log_file and summary path
 
-    log_file = "{}-squeezenet-edge-{}.log".format(time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time())),redis_helper.ID)
+    log_file = "{0}-{1}-edge-{2}.log".format(time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time())),
+    args.model,redis_helper.ID)
     log_dir = "tbruns/{0}-{1}-cifar10-edge-{2}".format(time.strftime('%Y%m%d%H%M%S',time.localtime(time.time())),args.model,redis_helper.ID)
 
     logger = open(log_file,'w')
@@ -79,7 +81,21 @@ def main(args,*k,**kw):
     testloader = torch.utils.data.DataLoader(testset, batch_size=args.batchsize, shuffle=False, num_workers=0)
 
     # construct neural network
-    net = SqueezeNet()
+    net = None
+    if args.model == "resnet18":
+        net = models.ResNet18()
+    elif args.model == "squeezenet":
+        net = models.SqueezeNet()
+    elif args.model == "mobilenetv2":
+        net = models.MobileNetV2()
+    elif args.model == "resnet34":
+        net = models.ResNet34()
+    elif args.model == "resnet50":
+        net = models.ResNet50()
+    elif args.model == "resnet101":
+        net = models.ResNet101()
+    else:
+        net = models.ResNet152()
     net.to(device)
 
     # define optimizer

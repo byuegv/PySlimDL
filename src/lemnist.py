@@ -62,11 +62,11 @@ def main(args,*k,**kw):
         time.sleep(1) # sleep 1 second
 
     model_score = 1.0 / args.edgenum # the initial model parameters score
-    
+
     # log_file and summary path
 
     log_file = "{}-lenet-edge-{}.log".format(time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time())),redis_helper.ID)
-    log_dir = "tbruns/lenet-mnist-edge-{}".format(redis_helper.ID)
+    log_dir = "tbruns/{0}-{1}-cifar10-edge-{2}".format(time.strftime('%Y%m%d%H%M%S',time.localtime(time.time())),args.model,redis_helper.ID)
 
     logger = open(log_file,'w')
     swriter = SummaryWriter(log_dir)
@@ -100,7 +100,7 @@ def main(args,*k,**kw):
             for item in param_list:
                 w1 = model_score / (model_score + item[0])
                 w2 = item[0] / (model_score + item[0])
-                
+
                 for local,other in zip(lenet.parameters(),item[1]):
                     ldev = local.get_device()
                     rdev = other.get_device()
@@ -109,7 +109,7 @@ def main(args,*k,**kw):
                     else:
                         local.data = local.data * w1 + other.data.cuda() * w2
                 model_score = model_score + item[0]
-            
+
             while redis_helper.finish_update() == False:
                 time.sleep(1.0)
 
@@ -169,7 +169,7 @@ def main(args,*k,**kw):
                     #loss = criterion(outputs, labels)
 
                    # loss_info.append((idx,loss.item()))
-            
+
             # sort loss info from large to small according loss
             loss_info = sorted(loss_info,key=lambda x: x[1],reverse=True)
             sel_index = []
@@ -178,7 +178,7 @@ def main(args,*k,**kw):
                 sel_index.append(loss_info[i][0])
             sel_index = sorted(sel_index)
             print("{} select {} critical agg points".format(redis_helper.NAME,len(sel_index)))
-            
+
             #cri_data = cri_data[sel_index]
             #cri_label = cri_label[sel_index]
 
@@ -232,7 +232,7 @@ def main(args,*k,**kw):
         redis_helper.ins_time_params(sel_edge_id,training_cost,model_score,list(lenet.parameters()))
         while redis_helper.finish_push() == False:
             time.sleep(1.0)
-        
+
         wallclock += time.time() - starteg
         # test on test data
         correct = 0
