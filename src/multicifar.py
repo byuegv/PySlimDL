@@ -24,7 +24,7 @@ parser.add_argument("--labels",default="0-9",help="The select labels")
 
 # model related
 parser.add_argument("--model",default="resnet18",help="The name of neural networks",choices=["resnet18",
-"mobilenetv2","resnet34","resnet50","resnet101","resnet152"])
+"mobilenetv2","resnet34","resnet50","resnet101","resnet152","alexnet"])
 
 # optimizer related
 parser.add_argument("-b","--batchsize",default=64,type=int,help="Batch size of a training batch at each iteration")
@@ -32,6 +32,7 @@ parser.add_argument("--optim",default="sgd",help="The optimization algorithms", 
 parser.add_argument("--lr",default=0.001,type=float,help="Learning rate of optimization algorithms")
 parser.add_argument("--epoch",default=100,type=int,help="The number of trainng episode")
 parser.add_argument("--iteration",default=10000,type=int,help="The number of training iteration")
+parser.add_argument("--lrscheduler",action="store_true",help="using multisteplr for training")
 
 # Redis related
 parser.add_argument("--edgenum",default=1,type=int,help="The number of edge")
@@ -84,6 +85,8 @@ def main(args,*k,**kw):
     net = None
     if args.model == "resnet18":
         net = models.ResNet18()
+    elif args.model == "alexnet":
+        net = models.AlexNet()
     elif args.model == "squeezenet":
         net = models.SqueezeNet()
     elif args.model == "mobilenetv2":
@@ -102,6 +105,8 @@ def main(args,*k,**kw):
     criterion = nn.CrossEntropyLoss()
     criterion_loss = nn.CrossEntropyLoss(reduction='none')
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
+
+    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer,milestones=[50,80], gamma=0.1)
 
     SIZE = (3,32,32)
     # start training
@@ -269,6 +274,10 @@ def main(args,*k,**kw):
         logger.write('{},{},{},{}\n'.format(epoch+1 ,iteration, wallclock, 100 * correct / total))
 
         swriter.add_scalar("accuracy", 100 * correct / total, epoch)
+
+        # adopt learning rate of optimizer
+        if args.lrscheduler:
+            lr_scheduler.step()
 
     print('Finished Training')
 
