@@ -250,8 +250,7 @@ def main(args,*k,**kw):
         _header="[ {} Epoch {} /Iteration {} Wallclock {}]".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),epoch+1,iteration,
         wallclock)
         print('{} Accuracy of the network on the 10000 test images: {} %'.format(_header,100 * correct / total))
-        logger.write('{},{},{},{}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch+1 ,iteration,
-        wallclock, 100 * correct / total))
+        logger.write('{},{},{},{}\n'.format(epoch+1 ,iteration, wallclock, 100 * correct / total))
 
         swriter.add_scalar("accuracy", 100 * correct / total, epoch)
 
