@@ -18,8 +18,8 @@ redis-cli -h ${_host} -p ${_port} FLUSHDB
 
 for idx in $(seq 1 ${_loop}) ; do
 
-  python ${1} --dataset "/workspace" ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_edge} --gpu --gpuindex 0 --fixedratio ${_ratio} &
-  python ${1} --dataset "/workspace" ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_edge} --gpu --gpuindex 0 --fixedratio ${_ratio} --noncriticalremove &
+  python ${1} --dataset "/workspace" --model ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_edge} --gpu --gpuindex 0 --fixedratio ${_ratio} &
+  python ${1} --dataset "/workspace" --model ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_edge} --gpu --gpuindex 0 --fixedratio ${_ratio} --noncriticalremove &
  
 done
 wait
