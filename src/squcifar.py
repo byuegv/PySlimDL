@@ -23,7 +23,9 @@ parser.add_argument("--classes",default=10,type=int,help="The number of classifi
 parser.add_argument("--labels",default="0-9",help="The select labels")
 
 # model related
-parser.add_argument("--model",default="squeezenet",help="The name of neural networks",choices=["squeezenet","alexnet"])
+parser.add_argument("--model",default="squeezenet",help="The name of neural networks",choices=["squeezenet","alexnet",
+"mobilenetv2","resnet34","resnet50","resnet101","resnet152","lenet5"])
+
 
 # optimizer related
 parser.add_argument("-b","--batchsize",default=64,type=int,help="Batch size of a training batch at each iteration")
@@ -31,6 +33,7 @@ parser.add_argument("--optim",default="sgd",help="The optimization algorithms", 
 parser.add_argument("--lr",default=0.001,type=float,help="Learning rate of optimization algorithms")
 parser.add_argument("--epoch",default=100,type=int,help="The number of trainng episode")
 parser.add_argument("--iteration",default=10000,type=int,help="The number of training iteration")
+parser.add_argument("--lrscheduler",action="store_true",help="if user learning rate scheduler")
 
 # Redis related
 parser.add_argument("--edgenum",default=1,type=int,help="The number of edge")
@@ -49,10 +52,11 @@ parser.add_argument("--summary",default=".",help="The path of summary")
 
 # GPU
 parser.add_argument("--gpu",action="store_true",help="if use gpu for training")
+parser.add_argument("--gpuindex",default=0,type=int,help="the index of gpu used for training")
 
 def main(args,*k,**kw):
     # if use gpus
-    device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
+    device = torch.device("cuda:{}".format(args.gpuindex) if torch.cuda.is_available() and args.gpu else "cpu")
     print("user device: {}".format(device))
 
     # redis helper related
@@ -87,6 +91,8 @@ def main(args,*k,**kw):
     criterion_loss = nn.CrossEntropyLoss(reduction='none')
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
 
+    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer,milestones=[50,80], gamma=0.1)
+
     SIZE = (3,32,32)
     # start training
     wallclock = 0.0
@@ -102,12 +108,7 @@ def main(args,*k,**kw):
                 w2 = item[0] / (model_score + item[0])
 
                 for local,other in zip(net.parameters(),item[1]):
-                    ldev = local.get_device()
-                    rdev = other.get_device()
-                    if ldev < 0:
-                        local.data = local.data * w1 + other.data.cpu() * w2
-                    else:
-                        local.data = local.data * w1 + other.data.cuda() * w2
+                    local.data = local.data * w1 + other.data.to(device) * w2
                 model_score = model_score + item[0]
 
             while redis_helper.finish_update() == False:
@@ -253,6 +254,9 @@ def main(args,*k,**kw):
         logger.write('{},{},{},{}\n'.format(epoch+1 ,iteration, wallclock, 100 * correct / total))
 
         swriter.add_scalar("accuracy", 100 * correct / total, epoch)
+
+        if args.lrscheduler:
+            lr_scheduler.step()
 
     print('Finished Training')
 

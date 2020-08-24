@@ -51,10 +51,11 @@ parser.add_argument("--summary",default=".",help="The path of summary")
 
 # GPU
 parser.add_argument("--gpu",action="store_true",help="if use gpu for training")
+parser.add_argument("--gpuindex",default=0,type=int,help="the index of gpu used for training")
 
 def main(args,*k,**kw):
     # if use gpus
-    device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
+    device = torch.device("cuda:{}".format(args.gpuindex) if torch.cuda.is_available() and args.gpu else "cpu")
     print("user device: {}".format(device))
 
     # redis helper related
@@ -123,12 +124,7 @@ def main(args,*k,**kw):
                 w2 = item[0] / (model_score + item[0])
 
                 for local,other in zip(net.parameters(),item[1]):
-                    ldev = local.get_device()
-                    rdev = other.get_device()
-                    if ldev < 0:
-                        local.data = local.data * w1 + other.data.cpu() * w2
-                    else:
-                        local.data = local.data * w1 + other.data.cuda() * w2
+                    local.data = local.data * w1 + other.data.to(device) * w2
                 model_score = model_score + item[0]
 
             while redis_helper.finish_update() == False:

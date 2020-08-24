@@ -1,21 +1,27 @@
 #!/bin/bash
-# flush redis
-redis-cli flushall
 
 _edge=${2}
-_log=${3}
+_model=${3}
+_loop=${4}
 
-#for idx in $(seq 1 ${_edge}) ; do
+_log=${5}
 
-  sleep 10s && python ${1} --dataset "/workspace" --edgenum ${_edge} --gpu --fixedratio "0.7" &
+_lr=0.01
+_host="localhost"
+_port=6379
+_ratio=0.5
 
-  sleep 5s && python ${1} --dataset "/workspace" --edgenum ${_edge} --gpu  --fixedratio "0.7" &
+# flush redis
+redis-cli -h ${_host} -p ${_port} FLUSHDB
+#redis-cli -h ${_host} -p ${_port} PING
 
-  sleep 7s && python ${1} --dataset "/workspace" --edgenum ${_edge} --noncriticalremove --fixedratio "0.3" &
 
-  sleep 13s && python ${1} --dataset "/workspace" --edgenum ${_edge}  --noncriticalremove --fixedratio "0.3" &
+for idx in $(seq 1 ${_loop}) ; do
 
-#done
+  python ${1} --dataset "/workspace" ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_edge} --gpu --gpuindex 0 --fixedratio ${_ratio} &
+  python ${1} --dataset "/workspace" ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_edge} --gpu --gpuindex 0 --fixedratio ${_ratio} --noncriticalremove &
+ 
+done
 wait
 
 if [ -d ${_log} ]; then
