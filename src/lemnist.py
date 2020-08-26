@@ -230,7 +230,8 @@ def main(args,*k,**kw):
         # push time and parameters to Redis
         model_score = model_score / 2
         sel_edge_id = redis_helper.random_edge_id(can_be_self=True)
-        redis_helper.ins_time_params(sel_edge_id,training_cost,model_score,list(lenet.parameters()))
+        paramls = list(map(lambda x: x.cpu(),list(lenet.parameters())))
+        redis_helper.ins_time_params(sel_edge_id,training_cost,model_score,paramls)
         while redis_helper.finish_push() == False:
             time.sleep(1.0)
 

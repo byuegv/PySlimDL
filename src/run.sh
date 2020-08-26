@@ -48,8 +48,8 @@ done
 
 for idx in $(seq 1 ${#coreset[@]}) ; do
 
-    #taskset --cpu-list ${coreset[idx]} python ${pyscript} --dataset "/workspace" --model ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_total_edge} --gpu --gpuindex $((idx % GPUNUM)) --fixedratio ${_ratio} &
-    taskset --cpu-list ${coreset[idx]} python ${pyscript} --dataset "/workspace" --model ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_total_edge} --gpu --gpuindex $((idx % GPUNUM)) --fixedratio ${_ratio} --noncriticalremove &
+    #taskset --cpu-list ${coreset[idx]} python ${pyscript} --dataset "/workspace" --model ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_total_edge} --gpu --gpuindex $((idx % GPUNUM)) --fixedratio ${_ratio} --noncriticalremove &
+    taskset --cpu-list ${coreset[idx]} python ${pyscript} --dataset "/workspace" --model ${_model} --lr ${_lr} --lrscheduler --host ${_host} --port ${_port} --edgenum ${_total_edge} --gpu --gpuindex $((idx % GPUNUM)) --fixedratio ${_ratio} &
  
 done
 wait
