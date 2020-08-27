@@ -70,9 +70,11 @@ def main(args,*k,**kw):
     # log_file and summary path
 
     log_file = "{}-lenet-edge-{}.log".format(time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time())),redis_helper.ID)
+    log_file2 = "{}-lenet-edge-{}-2.log".format(time.strftime('%Y%m%d-%H%M%S',time.localtime(time.time())),redis_helper.ID)
     log_dir = "tbruns/{0}-{1}-cifar10-edge-{2}".format(time.strftime('%Y%m%d%H%M%S',time.localtime(time.time())),args.model,redis_helper.ID)
 
     logger = open(log_file,'w')
+    logger2 = open(log_file2,'w')
     swriter = SummaryWriter(log_dir)
 
     # load traing data
@@ -276,7 +278,7 @@ def main(args,*k,**kw):
         _header="[ {} Epoch {} /Iteration {} Wallclock {}]".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),epoch+1,iteration,
         wallclock)
         print('{} Accuracy of the network on the 10000 test images: {} %'.format(_header,100 * correct / total))
-        #logger.write('{},{},{},{}\n'.format(epoch+1 ,iteration, wallclock, 100 * correct / total))
+        logger2.write('{},{},{},{}\n'.format(epoch+1 ,iteration, wallclock, 100 * correct / total))
 
         swriter.add_scalar("accuracy", 100 * correct / total, epoch)
 
@@ -287,6 +289,7 @@ def main(args,*k,**kw):
 
     redis_helper.register_out()
     logger.close() # close log file writer
+    logger2.close() # close log file writer
 
     return lenet
 
