@@ -238,6 +238,7 @@ def main(args,*k,**kw):
         wallclock += time.time() - starteg
         # test on test data
         correct = 0
+        correcttop5 = 0
         total = 0
         with torch.no_grad():
             for data in testloader:
@@ -247,14 +248,19 @@ def main(args,*k,**kw):
 
                 outputs = net(images).squeeze()
                 _, predicted = torch.max(outputs.data, 1)
+                maxk = max((1,5))
+                y_labels = labels.view(-1,1)
+                _, pred = outputs.topk(maxk,1,True,True)
+                correcttop5 += torch.eq(pred,y_labels).sum().float().item()
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
         _header="[ {} Epoch {} /Iteration {} Wallclock {}]".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),epoch+1,iteration,
         wallclock)
-        print('{} Accuracy of the network on the 10000 test images: {} %'.format(_header,100 * correct / total))
-        logger.write('{},{},{},{}\n'.format(epoch+1 ,iteration, wallclock, 100 * correct / total))
+        print('{} Accuracy of the network on the 10000 test images: Top1 {} % Top5 {}'.format(_header,100 * correct / total, 100 * correcttop5 / total))
+        logger.write('{},{},{},{},{}\n'.format(epoch+1 ,iteration, wallclock, 100 * correct / total, 100 * correcttop5 / total))
 
         swriter.add_scalar("accuracy", 100 * correct / total, epoch)
+        swriter.add_scalar("Top5 accuracy", 100 * correcttop5 / total, epoch)
 
         # adopt learning rate of optimizer
         if args.lrscheduler:

@@ -38,7 +38,7 @@ class TinyImage(VisionDataset):
 
     def __init__(self, root, class_num=100, train=True, transform=None, target_transform=None,
         download=False):
-        super(CIFAR10, self).__init__(root,transform=transform,target_transform=target_transform)
+        super(TinyImage, self).__init__(root,transform=transform,target_transform=target_transform)
         self.train = train
         self.class_num=class_num
         self.training_file = "tinyimage-{}-training.txt".format(class_num)
